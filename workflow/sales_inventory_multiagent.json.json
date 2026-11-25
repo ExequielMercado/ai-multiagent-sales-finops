@@ -1,0 +1,1040 @@
+{
+  "name": "Chatbot + Data Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -320,
+        0
+      ],
+      "id": "81ce439e-0f38-4cf9-8b19-5a23d0c1d8df",
+      "name": "Telegram Trigger",
+      "webhookId": "7a9dc28f-f8a7-4d97-bd14-8e754854911f",
+      "credentials": {
+        "telegramApi": {
+          "id": "CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "={{ \"\" }}"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2400,
+        -224
+      ],
+      "id": "4698572c-5c87-471d-81c3-9f26be2eb3e9",
+      "name": "Send a text message",
+      "webhookId": "b9f3d5c9-9588-4942-beb4-50f85fbeb66a",
+      "credentials": {
+        "telegramApi": {
+          "id": "CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "1576a3fe-6908-4b8c-94c0-ad3e49192a19"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Texto"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c3c77397-c2d3-484f-93c8-e8fe9493ff1a",
+                    "leftValue": "={{ $json.message.voice }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        -16
+      ],
+      "id": "5623e754-1eb5-4b77-b7ce-199aeb1410f7",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        160,
+        80
+      ],
+      "id": "ab2bb028-9c53-4c67-bc96-e9cde38f5bd8",
+      "name": "Get a file",
+      "webhookId": "bd0d7117-3387-4652-87e6-22eec2a453c0",
+      "credentials": {
+        "telegramApi": {
+          "id": "CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/audio/transcriptions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "model",
+              "value": "whisper-large-v3"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        80
+      ],
+      "id": "2dcc494e-ef86-4ea3-92e7-fe65bbad36d8",
+      "name": "HTTP Request",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CREDENTIAL_ID",
+          "name": "Header Auth account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6cad3bb5-857e-4b9b-a6ce-30e3cb1eb13c",
+              "name": "mensaje_unificado",
+              "value": "={{ $json.message?.text || $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        528,
+        -32
+      ],
+      "id": "dd4e4108-ca57-4dae-a08a-a97a8028d76d",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4e6b37a7-2cf5-4865-b720-ecc0b28b7f0c",
+              "leftValue": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+              "rightValue": "TU_OWNER_CHAT_ID",
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        688,
+        -80
+      ],
+      "id": "2dcdf304-9b5e-4770-b34c-e3ce638325e5",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nif (item.binary && item.binary.data && item.binary.data.fileName) {\n  item.binary.data.fileName = item.binary.data.fileName.replace(/\\.oga$/i, '.ogg');\n}\nreturn [item];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        80
+      ],
+      "id": "284c52b4-6e98-4f89-ba94-a66839022468",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Productos del catálogo por categoría. Devuelve ID_Prod, Producto, Categoria, Costo, Precio_Lista, Stock.",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cordoba_Hardware_DB ",
+          "cachedResultUrl": "TU_GOOGLE_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 219652673,
+          "mode": "list",
+          "cachedResultName": "Catalogo",
+          "cachedResultUrl": "TU_GOOGLE_SHEET_ID"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Categoria",
+              "lookupValue": "={{ $fromAI('Categoria','Una de: Procesadores, Motherboards, Memorias RAM, Almacenamiento, Placas de Video, Fuentes, Gabinetes, Refrigeración, Monitores, Mouses, Teclados, Auriculares, Accesorios, Redes','string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1408,
+        -320
+      ],
+      "id": "TU_GOOGLE_SHEET_ID",
+      "name": "Leer_Catalogo",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CREDENTIAL_ID",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Agrega una venta a Ventas. Una sola llamada por venta.",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cordoba_Hardware_DB ",
+          "cachedResultUrl": "TU_GOOGLE_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2078064666,
+          "mode": "list",
+          "cachedResultName": "Ventas",
+          "cachedResultUrl": "TU_GOOGLE_SHEET_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Fecha": "={{ $fromAI('Fecha','dd/MM/yyyy','string') }}",
+            "Producto": "={{ $fromAI('Producto','Nombre exacto del Catalogo','string') }}",
+            "Cantidad": "={{ $fromAI('Cantidad','Unidades, entero','number') }}",
+            "Precio_Unitario": "={{ $fromAI('Precio_Unitario','Precio_Lista, numero sin $','number') }}",
+            "Costo_Unitario": "={{ $fromAI('Costo_Unitario','Costo del catalogo, numero sin $','number') }}",
+            "Ganancia_Neta": "={{ $fromAI('Ganancia_Neta','(Precio-Costo)*Cantidad, numero','number') }}",
+            "Medio_Pago": "={{ $fromAI('Medio_Pago','Efectivo, Transferencia, Mercado Pago, Tarjeta Débito o Tarjeta Crédito','string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Fecha",
+              "displayName": "Fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Producto",
+              "displayName": "Producto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cantidad",
+              "displayName": "Cantidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Precio_Unitario",
+              "displayName": "Precio_Unitario",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Costo_Unitario",
+              "displayName": "Costo_Unitario",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Ganancia_Neta",
+              "displayName": "Ganancia_Neta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Medio_Pago",
+              "displayName": "Medio_Pago",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1344,
+        -96
+      ],
+      "id": "73c0c488-c388-4b74-ae5c-cfdc545a266a",
+      "name": "Registrar_Venta",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CREDENTIAL_ID",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Pedidos de clientes por Estado. Evitar Entregado salvo pedido explícito.",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cordoba_Hardware_DB ",
+          "cachedResultUrl": "TU_GOOGLE_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1027062798,
+          "mode": "list",
+          "cachedResultName": "Pedidos_Clientes",
+          "cachedResultUrl": "TU_GOOGLE_SHEET_ID"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Estado",
+              "lookupValue": "={{ $fromAI('Estado','Pendiente de pago, Pago confirmado, En preparación, Enviado, Entregado o Cancelado','string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1520,
+        -224
+      ],
+      "id": "25877eb1-379d-41ff-83b0-7954643eec86",
+      "name": "Leer_Pedidos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CREDENTIAL_ID",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensaje_unificado }}",
+        "options": {
+          "systemMessage": "=Asistente interno de Córdoba Hardware (dueño). Hoy: {{ $now.format('dd/MM/yyyy') }}. Respuestas cortas, español rioplatense.\n\nVENTA:\n1. Cantidad = 1 si no la indica. Los números del modelo (Ryzen 5, RTX 3060, DDR4) no son cantidad.\n2. Nunca pidas precio ni costo. Llamá UNA vez a Leer_Catalogo (por Categoria) y tomá ID_Prod, Producto, Costo, Precio_Lista y Stock. Si el mensaje anterior trae \"#ID|Precio|Costo|Stock\", usá eso y no llames a Leer_Catalogo.\n3. Fecha: hoy ({{ $now.format('dd/MM/yyyy') }}) salvo que indique otra.\n4. Si falta el medio de pago, preguntá SOLO eso y respondé: \"¿Medio de pago para {Cantidad}x {Producto}? #{ID_Prod}|{Precio_Lista}|{Costo}|{Stock}\". Si ya lo dijo, seguí.\n5. Ganancia_Neta = (Precio_Lista - Costo) * Cantidad. Llamá UNA vez a Registrar_Venta (números sin $). El stock se descuenta solo en la hoja: no lo actualices.\nConfirmá en una línea con el stock nuevo (Stock - Cantidad).\n\nCONSULTAS: usá Leer_Resumen (más vendidos, rentabilidad, stock bajo, ventas por mes) o Leer_Pedidos. No leas datos que no necesites.\nNunca escribas nombres de herramientas ni JSON en tu respuesta final; respondé siempre en texto plano para el usuario.",
+          "maxIterations": 5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1088,
+        -672
+      ],
+      "id": "1a0056f7-2675-49c7-a336-cb746cd32604",
+      "name": "Agente Owner",
+      "retryOnFail": false,
+      "waitBetweenTries": 3000,
+      "maxTries": 4,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensaje_unificado }}",
+        "options": {
+          "systemMessage": "Asistente de ventas de Córdoba Hardware. Español rioplatense, amable, máximo 5 líneas.\n- Precios y stock: solo con Leer_Catalogo_Cliente (una llamada, por categoría). No inventes productos ni reveles costos, ventas o datos de otros clientes.\n- Si quiere comprar, pedí lo que falte entre nombre, detalle del pedido, entrega y pago. Con todo completo, llamá UNA vez a Registrar_Pedido y confirmá.\n- Sin stock o inexistente: ofrecé 1-2 alternativas de la misma categoría.\n- Local: Nueva Córdoba, Córdoba Capital. Horario: 9am a 9pm. Pagos: efectivo, transferencia, Mercado Pago, tarjetas. Envíos: Córdoba Capital y todo el país por Andreani.",
+          "maxIterations": 4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1152,
+        80
+      ],
+      "id": "ff978e45-82b1-48a5-bcbe-660adad01d73",
+      "name": "Agente Cliente",
+      "retryOnFail": false,
+      "maxTries": 4,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "contextWindowLength": 4
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        1104,
+        320
+      ],
+      "id": "714be5ba-d733-4d5a-984e-2328bc385429",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Precios y stock por categoría. Devuelve Producto, Categoria, Precio_Lista, Stock.",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cordoba_Hardware_DB ",
+          "cachedResultUrl": "TU_GOOGLE_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1896691187,
+          "mode": "list",
+          "cachedResultName": "Catalogo_Publico",
+          "cachedResultUrl": "TU_GOOGLE_SHEET_ID"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Categoria",
+              "lookupValue": "={{ $fromAI('Categoria','Una de: Procesadores, Motherboards, Memorias RAM, Almacenamiento, Placas de Video, Fuentes, Gabinetes, Refrigeración, Monitores, Mouses, Teclados, Auriculares, Accesorios, Redes','string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1424,
+        304
+      ],
+      "id": "a260c762-bb71-46ca-8f03-dc1bafb1181d",
+      "name": "Leer_Catalogo_Cliente",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CREDENTIAL_ID",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Registra un pedido confirmado por el cliente. Una sola vez.",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cordoba_Hardware_DB ",
+          "cachedResultUrl": "TU_GOOGLE_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1027062798,
+          "mode": "list",
+          "cachedResultName": "Pedidos_Clientes",
+          "cachedResultUrl": "TU_GOOGLE_SHEET_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Fecha": "={{ $now.format('dd/MM/yyyy') }}",
+            "Chat_ID": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+            "Nombre": "={{ $fromAI('Nombre','Nombre del cliente','string') }}",
+            "Pedido": "={{ $fromAI('Pedido','Cant x Producto unidos con +','string') }}",
+            "Entrega": "={{ $fromAI('Entrega','Retiro en local, Envío a domicilio o Envío Andreani','string') }}",
+            "Pago": "={{ $fromAI('Pago','Transferencia, Efectivo al retirar, Mercado Pago o Tarjeta Crédito','string') }}",
+            "Estado": "Pendiente de pago"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Fecha",
+              "displayName": "Fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Chat_ID",
+              "displayName": "Chat_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Pedido",
+              "displayName": "Pedido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Entrega",
+              "displayName": "Entrega",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Pago",
+              "displayName": "Pago",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1264,
+        320
+      ],
+      "id": "4a2e3210-5db1-4a15-8133-c052a3ce29cf",
+      "name": "Registrar_Pedido",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CREDENTIAL_ID",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {
+          "maxOutputTokens": 500
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        352
+      ],
+      "id": "5235e51f-7e7b-45fd-ba66-9e60fb1add6c",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CREDENTIAL_ID",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1008,
+        -368
+      ],
+      "id": "9130ae8d-a93e-4762-b844-fd190d88696c",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CREDENTIAL_ID",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}_v4",
+        "contextWindowLength": 2
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        1184,
+        -352
+      ],
+      "id": "f84452a7-78af-419e-9b73-3b4daaa14f6f",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "⚠️ Estoy saturado, probá de nuevo en 1 minuto.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1888,
+        -240
+      ],
+      "id": "5d2caa70-6060-482e-8dc2-54377a311f49",
+      "name": "Aviso de error",
+      "webhookId": "89ddb9b5-87cd-4d2a-921b-29615f50655e",
+      "credentials": {
+        "telegramApi": {
+          "id": "CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Resumen ya calculado. Top_Vendidos: 5 más vendidos. Top_Rentables: 5 con más ganancia. Stock_Bajo: stock <=2. Ventas_Mes: unidades y ganancia por mes. Ultimas_Ventas: 15 últimas. Una hoja por llamada.",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cordoba_Hardware_DB ",
+          "cachedResultUrl": "TU_GOOGLE_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $fromAI('Hoja','Top_Vendidos, Top_Rentables, Stock_Bajo, Ventas_Mes o Ultimas_Ventas','string') }}",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1472,
+        -96
+      ],
+      "id": "c622db40-59c8-46d7-946d-14ece3a3e567",
+      "name": "Leer_Resumen",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CREDENTIAL_ID",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Agente Owner",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agente Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer_Catalogo": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Owner",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar_Venta": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Owner",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente Cliente",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer_Catalogo_Cliente": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Cliente",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar_Pedido": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Cliente",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Owner": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso de error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Cliente": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso de error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Cliente",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer_Pedidos": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Owner",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente Owner",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Owner",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer_Resumen": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Owner",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "67647741-50bd-4228-a8cf-4affcb96d052",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "TU_INSTANCE_ID"
+  },
+  "nodeGroups": [],
+  "id": "AMcoaFtiOGFUEs2X",
+  "tags": []
+}
